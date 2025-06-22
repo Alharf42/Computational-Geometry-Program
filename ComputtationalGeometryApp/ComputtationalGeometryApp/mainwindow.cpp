@@ -71,6 +71,8 @@ void MainWindow::paintEvent(QPaintEvent *event)
     }
     if(drawConvexHull)
     {
+        if(points.size()!=0)
+        {
         QPolygonF convexHull = findConvexHull(QPolygonF(points));
         if(!drawSmallestCircle)
         {
@@ -87,6 +89,7 @@ void MainWindow::paintEvent(QPaintEvent *event)
             painter.drawEllipse(forCircle.first, forCircle.second, forCircle.second);
 
         }
+        }
     }
     if(drawTriangulation)
     {
@@ -94,15 +97,13 @@ void MainWindow::paintEvent(QPaintEvent *event)
         qreal polygonArea = 0;
         for(QPolygonF triangle : triangles)
         {
-            if(!computeSurfaceArea)
-            {
             QPainter painter(this);
             painter.setPen(Qt::white);
             int index = QRandomGenerator::global()->bounded(0,colors.size());
             painter.setBrush(colors[index]);
             painter.drawPolygon(triangle, Qt::OddEvenFill);
-            }
-            else
+
+            if (computeSurfaceArea && points.size() >2)
             {
                 QVector3D ViVminus = QVector3D(triangle[1] - triangle[0]);
                 QVector3D ViVplus = QVector3D(triangle[2]-triangle[1]);
@@ -131,6 +132,8 @@ void MainWindow::on_Clear_clicked()
     drawConvexHull=false;
     drawTriangulation = false;
     drawSmallestCircle = false;
+    computeSurfaceArea = false;
+    ui->SurfaceAreaLabel->setVisible(false);
     update();
 }
 //button draw polygon
@@ -142,6 +145,8 @@ void MainWindow::on_MakePolygon_clicked()
     drawConvexHull=false;
     drawTriangulation = false;
     drawSmallestCircle = false;
+    computeSurfaceArea = false;
+    ui->SurfaceAreaLabel->setVisible(false);
     update();
 
 }
@@ -159,7 +164,7 @@ void MainWindow::sortPolygon(QPolygonF& polygon)
     QPointF center(0,0);
     for(const QPointF& p : polygon)
         center +=p;
-    center/polygon.size();
+    center/=polygon.size();
 
     //2)estimate the angle between each point and the center
     //first points will be those in 4th quadrant then 3rd, 2nd, 1st
@@ -381,39 +386,40 @@ void MainWindow::on_ConvexHull_clicked()
 }
 /////////////////////////////////////////////////////////////////////////////
 //triangulation by ear clipping
-bool MainWindow::isEarTip(QPointF& Vi, QPolygonF& polygon)
+bool MainWindow::isEarTip(QPointF& Vi, QPolygonF& polygon, int i, const QPolygonF& originalPolygon)
 {
     //find adject points
-    std::pair<QPointF, QPointF> pair = findAdjecentPoints(Vi, polygon);
+    std::pair<QPointF, QPointF> pair = findAdjecentPoints(Vi, polygon, i);
     QPointF Vminus = pair.first;
     QPointF Vplus = pair.second;
 
     //check if Vi has convex angle in polygon
     QPointF v1 = Vi-Vminus;
     QPointF v2 = Vplus - Vi;
-    qreal cross = v1.x()*v2.x() - v1.y()*v2.y();
-    if(cross<0)
+    qreal cross = v1.x()*v2.y() - v1.y()*v2.x();
+    if(cross>=0)
     {
         //check if theres no other point in the triangle
-        bool noVertices=true;
+        //when checking for if it contains all points
+        //do so on the whole polygon wihout any removes points
         QPolygonF triangle = {Vminus,Vi,Vplus};
-        for(QPointF p : polygon)
+        for(const QPointF& p : originalPolygon)
         {
             if(triangle.containsPoint(p, Qt::OddEvenFill))
             {
                 if(p!=Vi && p!=Vminus && p != Vplus)
                 {
-                    noVertices=false;
-                    return noVertices;
+                    return false;
                 }
             }
         }
+        return true;
     }
     return false;
 }
-std::pair<QPointF,QPointF> MainWindow::findAdjecentPoints(QPointF Vi, QPolygonF polygon)
+std::pair<QPointF,QPointF> MainWindow::findAdjecentPoints(QPointF Vi, QPolygonF polygon, int i)
 {
-    int i = polygon.indexOf(Vi);
+    //int i = polygon.indexOf(Vi);
     QPointF Vminus;
     if(i==0)
     {
@@ -437,6 +443,8 @@ std::pair<QPointF,QPointF> MainWindow::findAdjecentPoints(QPointF Vi, QPolygonF 
 //main funtion
 QVector<QPolygonF> MainWindow::triangulate(QPolygonF polygon)
 {
+    QPolygonF originalPolygon = polygon;
+    //QPolygonF pom = polygon;
     QVector<QPolygonF> triangles;
     //1)initialize the ear tip status of each vertex
     //ear tip=for any vertex Vi and corresponding triangle <Vi-1,Vi,Vi+1>
@@ -452,7 +460,7 @@ QVector<QPolygonF> MainWindow::triangulate(QPolygonF polygon)
     {
         QPointF Vi = polygon[i];
         //check if Vi is an ear tip
-        if(isEarTip(Vi,polygon))
+        if(isEarTip(Vi,polygon, i, originalPolygon))
         {
             earTips << Vi;
         }
@@ -464,18 +472,20 @@ QVector<QPolygonF> MainWindow::triangulate(QPolygonF polygon)
     //2)while n>3 do
     while(polygon.size()>3)
     {
-        for(QPointF p : polygon)
+        //for(QPointF p : polygon)
+        for(int i = 0; i<polygon.size();i++)
         {
+            QPointF p = polygon[i];
     //2.1)locate an ear tip Vi
             if(earTips.contains(p))
             {
     //2.2)delete Vi from polygon and make a new triangle to be put to triangles
-                std::pair<QPointF,QPointF> pair = findAdjecentPoints(p, polygon);
+                std::pair<QPointF,QPointF> pair = findAdjecentPoints(p, polygon, i);
                 QPolygonF newTriangle = {pair.first, p, pair.second};
                 triangles.append(newTriangle);
-                polygon.removeAll(p);
+                polygon.removeAt(i);
     //2.3)update the ear status of the adject vertices Vi-1,Vi+1
-                if(isEarTip(pair.first, polygon))
+                if(isEarTip(pair.first, polygon, i, originalPolygon))
                 {
                     if(!earTips.contains(pair.first))
                         earTips.append(pair.first);
@@ -485,7 +495,7 @@ QVector<QPolygonF> MainWindow::triangulate(QPolygonF polygon)
                     if(earTips.contains(pair.first))
                         earTips.removeAll(pair.first);
                 }
-                if(isEarTip(pair.second,polygon))
+                if(isEarTip(pair.second,polygon, i, originalPolygon))
                 {
                     if(!earTips.contains(pair.second))
                         earTips.append(pair.second);
@@ -495,6 +505,7 @@ QVector<QPolygonF> MainWindow::triangulate(QPolygonF polygon)
                     if(earTips.contains(pair.second))
                         earTips.removeAll(pair.second);
                 }
+                break;
             }
         }
     }
@@ -531,10 +542,84 @@ void MainWindow::on_SurfaceArea_clicked()
 //it uses naive aproach when it uses already found convex hull
 //and then finding the circle by trying out two to three points each
 //and than outpus the smalles one found
-std::pair<QPointF, qreal> findSmallestCircle(QPolygonF convexHull)
+
+//function that return eucklidean distance between two points
+qreal MainWindow::euclideanDistance(const QPointF& x, const QPointF& y)
+{
+    qreal dx = pow(x.x()-y.x(),2);
+    qreal dy = pow(x.y()-y.y(),2);
+    return sqrt(dx+dy);
+}
+//function to test if all points are inside the circle
+bool MainWindow::allPointsInside(const std::pair<QPointF, qreal>& circle, const QPolygonF& polygon)
+{
+    for(const QPointF& p : polygon)
+    {
+        //compute euclidean distance of p from center
+        //if its not smaller than radious is outside
+        if(euclideanDistance(p,circle.first)>circle.second)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+//function that will return radious and center of a circle defined by 2 points
+std::pair<QPointF, qreal> MainWindow::getCircle(const QPointF& a, const QPointF& b)
+{
+    QPointF center = {(b.x()+a.x())/2, (b.y()+a.y())/2};
+    qreal radious = euclideanDistance(a,b)/2;
+    return std::pair<QPointF, qreal> {center, radious};
+}
+//function that will return radious and center of a circle dfiend by three points
+std::pair<QPointF, qreal> MainWindow::getCircle(const QPointF& a, const QPointF& b, const QPointF& c)
 {
     QPointF center;
-    qreal radious;
+    qreal centerX;
+    qreal centerY;
+    qreal radius;
+    qreal x1 = a.x();
+    qreal x2 = b.x();
+    qreal x3 = c.x();
+    qreal y1 = a.y();
+    qreal y2 = b.y();
+    qreal y3 = c.y();
+    /*
+    //from equation of a circle and three points we can find the center and radious
+    //(x-h)^2 + (y-k)^2  = r^2 - three such equtions three variables
+    centerX = (( ( x1*x1 - x3*x3 )*( y1 - y2 ) +( y1*y1 - y3*y3 )*( y1 - y2 ) +
+                  ( x2*x2 - x1*x1 )*( y1 - y3) +
+                  ( y2*y2 - y1*y1 )*( y1 - y3 ) ) / ( x3 -x1 )*( y1 - y2 ) -
+                 ( x2 - x1 )*( y1 - y3 ))/2;
+    centerY = (( ( x1*x1 - x3*x3 )*( x1 - x2 ) +( y1*y1 - y3*y3 )*( x1 - x2 ) +
+               ( x2*x2 - x1*x1 )*( x1 - x3 ) +
+               ( y2*y2 - y1*y1 )*( x1 - x3 ) ) / ( y3 - y1 )*( x1 - x2 ) -
+              ( y2 - y1 )*( x1 - x3 ))/2;
+    center = {centerX, centerY};
+    radious = sqrt( pow(x1-centerX,2) + pow(y1-centerY,2) );
+*/
+    // Compute the determinant
+    double D = 2 * (x1*(y2 - y3) + x2*(y3 - y1) + x3*(y1 - y2));
+    if (std::abs(D) < 1e-8) {
+        // Points are colinear; return a big circle (or ignore)
+        return {{0, 0}, std::numeric_limits<qreal>::max()};
+    }
+
+    double Ux = ((x1*x1 + y1*y1)*(y2 - y3) + (x2*x2 + y2*y2)*(y3 - y1) + (x3*x3 + y3*y3)*(y1 - y2)) / D;
+    double Uy = ((x1*x1 + y1*y1)*(x3 - x2) + (x2*x2 + y2*y2)*(x1 - x3) + (x3*x3 + y3*y3)*(x2 - x1)) / D;
+
+    center= {Ux, Uy};
+    radius = euclideanDistance(center, a); // all three are on the circle
+
+    return std::pair<QPointF, qreal> {center, radius};
+}
+
+std::pair<QPointF, qreal> MainWindow::findSmallestCircle(QPolygonF convexHull)
+{
+    QPointF center;
+    qreal radious = std::numeric_limits<qreal>::max();
+    std::pair<QPointF,qreal> circle = {center,radious};
+    std::pair<QPointF, qreal> newCircle;
     //test if all points are inside
     //test if its smaller than previous
     //how to test if its smaller by radious?
@@ -542,9 +627,38 @@ std::pair<QPointF, qreal> findSmallestCircle(QPolygonF convexHull)
     //first try pairs
     //the center is the midpoint of the two points and radious is half the distance between them
     //find all pairs
+    for(QPointF p : convexHull)
+    {
+        for(QPointF q : convexHull)
+        {
+            newCircle = getCircle(p,q);
+            //test if the newest found circle is smaller
+            if(allPointsInside(newCircle, convexHull))
+            {
+                if(newCircle.second <circle.second)
+                {
+                    circle = newCircle;
+                }
+            }
+        }
+    }
     //than try triples
+    for(QPointF p : convexHull)
+        for(QPointF q : convexHull)
+            for(QPointF h : convexHull)
+            {
+                newCircle = getCircle(p,q,h);
+                //test if the newest found circle is smaller
+                if(allPointsInside(newCircle, convexHull))
+                {
+                    if(newCircle.second <circle.second)
+                    {
+                        circle = newCircle;
+                    }
+                }
+            }
 
-    return std::pair<QPointF,qreal> {center,radious};
+    return circle;
 }
 void MainWindow::on_SmallestCircle_clicked()
 {
@@ -554,6 +668,7 @@ void MainWindow::on_SmallestCircle_clicked()
     drawConvexHull = true;
     drawTriangulation = false;
     drawPolygon = true;
+    ui->SurfaceAreaLabel->setVisible(false);
     update();
 }
 //TODO::function to detect if polygon is simple and raise an error for functions needing

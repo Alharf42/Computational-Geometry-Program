@@ -46,26 +46,36 @@ private:
 
     //a container to store clicked points
     QVector<QPointF> points;
+
     //a variable that keeps information wheather new polygon should be drawn
     bool drawPolygon = false;
     bool drawConvexHull=false;
     bool drawTriangulation=false;
     bool computeSurfaceArea = false;
     bool drawSmallestCircle = false;
+
     //container for storing polygons
     QVector<QPolygonF> polygons;
+
     //my colors
     QColor myRed = QColor(168,14,3);
     QColor myYellow = QColor(224, 177, 65);
+
     //helper function for finding convex hull
     qreal distanceFromLine(QPointF& minPoint, QPointF& maxPoint, QPointF& p);
     void findHull(QPolygonF& polygon, QPointF& min, QPointF& max, QPolygonF& convexHull);
     std::pair<QPolygonF, QPolygonF> dividePolygonByLine(QPolygonF polygon, QPointF minPoint,QPointF maxPoint);
     void sortPolygon(QPolygonF& polygon);
+
     //helper functions for finding triangulation
-    std::pair<QPointF,QPointF> findAdjecentPoints(QPointF Vi, QPolygonF polygon);
-    bool isEarTip(QPointF& Vi, QPolygonF& polygon);
+    std::pair<QPointF,QPointF> findAdjecentPoints(QPointF Vi, QPolygonF polygon, int i);
+    bool isEarTip(QPointF& Vi, QPolygonF& polygon, int i, const QPolygonF& originalPolygon);
+
     //helper functions for finding smallest circle
+    qreal euclideanDistance(const QPointF& x, const QPointF& y);
+    bool allPointsInside(const std::pair<QPointF, qreal>& circle, const QPolygonF& polygon);
+    std::pair<QPointF, qreal> getCircle(const QPointF& a, const QPointF& b);
+    std::pair<QPointF, qreal> getCircle(const QPointF& a, const QPointF& b, const QPointF& c);
 
 };
 //iteratable of qt predefined colors
