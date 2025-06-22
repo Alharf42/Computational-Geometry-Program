@@ -1,0 +1,11 @@
+E:/prog/pgr1/ComputtationalGeometryApp/build/Desktop-Debug/CMakeFiles/ComputtationalGeometryApp.dir
+E:/prog/pgr1/ComputtationalGeometryApp/build/Desktop-Debug/CMakeFiles/ComputtationalGeometryApp_lupdate.dir
+E:/prog/pgr1/ComputtationalGeometryApp/build/Desktop-Debug/CMakeFiles/update_translations.dir
+E:/prog/pgr1/ComputtationalGeometryApp/build/Desktop-Debug/CMakeFiles/ComputtationalGeometryApp_lrelease.dir
+E:/prog/pgr1/ComputtationalGeometryApp/build/Desktop-Debug/CMakeFiles/release_translations.dir
+E:/prog/pgr1/ComputtationalGeometryApp/build/Desktop-Debug/CMakeFiles/edit_cache.dir
+E:/prog/pgr1/ComputtationalGeometryApp/build/Desktop-Debug/CMakeFiles/rebuild_cache.dir
+E:/prog/pgr1/ComputtationalGeometryApp/build/Desktop-Debug/CMakeFiles/list_install_components.dir
+E:/prog/pgr1/ComputtationalGeometryApp/build/Desktop-Debug/CMakeFiles/install.dir
+E:/prog/pgr1/ComputtationalGeometryApp/build/Desktop-Debug/CMakeFiles/install/local.dir
+E:/prog/pgr1/ComputtationalGeometryApp/build/Desktop-Debug/CMakeFiles/ComputtationalGeometryApp_autogen.dir
