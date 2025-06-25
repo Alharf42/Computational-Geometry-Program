@@ -1,7 +1,4 @@
-# Computational-Geometry-Program
-Program were you can create a polygon by mouse clicks, than find its convex hull and compute its surface
-
-# C++/Qt GUI Application
+# Computational-Geometry-Program C++/Qt GUI Application
 
 This project provides an interactive GUI for drawing polygons and performing computational geometry tasks, such as:
 - Constructing a polygon from clicked points
@@ -11,13 +8,13 @@ This project provides an interactive GUI for drawing polygons and performing com
 - Finding the **Smallest Enclosing Circle**
 
 # Main Features & Algorithms
-Convex Hull: Implemented using a QuickHull-like recursive algorithm
+Convex Hull: Implemented using a QuickHull recursive algorithm
 
-Triangulation: Implementing ear clipping algorithm
+Triangulation: Implemented via ear clipping algorithm
 
-Surface Area: Computed using as a sume of surface areas of triangualted triangles
+Surface Area: Computed using from a sum of surface areas of triangualted triangles
 
-Circle: Smallest enclosing circle computed from the convex hull using brute force naive approach
+Smallest encslosing Circle: computed from the convex hull using brute force naive approach
 
 # Future Improvements
 Handle collinear edge cases better in convex hull
