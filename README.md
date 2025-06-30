@@ -16,13 +16,16 @@ Surface Area: Computed using from a sum of surface areas of triangualted triangl
 
 Smallest encslosing Circle: computed from the convex hull using brute force naive approach
 
+# Additional information
+
 Name: Tony Karásek
+
 Academic Year: 2024-2025
+
 Field of study: APIN
 
 
 # Future Improvements
-Handle collinear edge cases better in convex hull
 
 # Technologies
 Built using **C++** and **Qt Framework**.
